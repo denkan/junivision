@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  rpi-setup:
+    build: .
+    container_name: pi-test
+    privileged: true
+    # network_mode: 'host'
+    volumes:
+      - ./src/:/root
+    ports:
+      - '3022:80'
+    restart: unless-stopped
+    command: ['/bin/bash', '-c', 'bash /root/setup.sh && tail -f /dev/null']
