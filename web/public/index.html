@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>JuniVision</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        --video-brightness: 1;
+        --video-contast: 1;
+        --video-greyscale: 0;
+        --video-rotate: 0deg;
+        --video-scale: 1;
+        --video-move-x: 0;
+        --video-move-y: 0;
+        --debug-display: none;
+      }
+      html,
+      body {
+        -webkit-overflow-scrolling: touch;
+      }
+      html {
+        font-size: 20px;
+      }
+      body {
+        background: #111;
+        font-family: Roboto, Helvetica, sans-serif;
+        font-size: 1rem;
+        margin: 0;
+        position: fixed; /* Prevent overscroll */
+      }
+      #wrapper {
+        position: relative;
+        width: 100dvw;
+        height: 100dvh;
+        overflow: debug-only;
+      }
+      #video-stream {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9;
+        background: #050505;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(var(--video-rotate)) scale(var(--video-scale))
+          translate(var(--video-move-x), var(--video-move-y));
+        filter: contrast(var(--video-contast)) brightness(var(--video-brightness)) grayscale(var(--video-greyscale));
+      }
+      #menu {
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+      }
+      .menu-open #menu {
+        display: block;
+      }
+      #menu ul {
+        z-index: 2;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        list-style: none;
+        padding: 3rem;
+        border-radius: 2rem;
+        background: black;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        justify-content: stretch;
+        align-items: stretch;
+      }
+      button {
+        border: 0;
+        background: white;
+        color: black;
+        font-size: 2rem;
+        padding: 10px 20px;
+        cursor: pointer;
+        width: 100%;
+      }
+      #toggle-menu {
+        position: absolute;
+        bottom: 1rem;
+        left: 1rem;
+        width: 4rem;
+        height: 4rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1;
+        border-radius: 1rem;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        font-size: 2rem;
+        cursor: pointer;
+      }
+      #toggle-menu .close {
+        display: none;
+      }
+      .menu-open #toggle-menu .open {
+        display: none;
+      }
+      .menu-open #toggle-menu .close {
+        display: inline;
+      }
+
+      .debug-only {
+        display: var(--debug-display);
+      }
+
+      #debug {
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        padding: 1rem;
+        font-size: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="wrapper">
+      <video id="video-stream" muted></video>
+
+      <nav id="menu">
+        <ul>
+          <li>
+            <button onclick="selectScene('bench')">Bänken</button>
+          </li>
+          <li>
+            <button onclick="selectScene('board')">Tavlan</button>
+          </li>
+          <li>
+            <fieldset id="settings">
+              <div>
+                <input
+                  name="brightness"
+                  type="range"
+                  min="1.0"
+                  max="2.0"
+                  step="0.1"
+                  value="1.0"
+                  oninput="document.documentElement.style.setProperty('--video-brightness', this.value)"
+                />
+              </div>
+              <div>
+                <input
+                  name="contrast"
+                  type="range"
+                  min="1.0"
+                  max="3.0"
+                  step="0.1"
+                  value="1.0"
+                  oninput="document.documentElement.style.setProperty('--video-contast', this.value)"
+                />
+              </div>
+              <div>
+                <input
+                  name="greyscale"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value="0"
+                  oninput="document.documentElement.style.setProperty('--video-greyscale', this.value)"
+                />
+              </div>
+              <div class="debug-only">
+                <input
+                  name="rotate"
+                  type="range"
+                  min="-270"
+                  max="270"
+                  step="90"
+                  value="0"
+                  oninput="document.documentElement.style.setProperty('--video-rotate', this.value+'deg')"
+                />
+              </div>
+              <div class="debug-only">
+                <input
+                  name="scale"
+                  type="range"
+                  min="0.5"
+                  max="3"
+                  step="0.1"
+                  value="1"
+                  oninput="document.documentElement.style.setProperty('--video-scale', this.value)"
+                />
+              </div>
+              <div class="debug-only">
+                <input
+                  name="moveX"
+                  type="number"
+                  value="0"
+                  oninput="document.documentElement.style.setProperty('--video-move-x', this.value+'px')"
+                />
+                <input
+                  name="moveY"
+                  type="number"
+                  value="0"
+                  oninput="document.documentElement.style.setProperty('--video-move-y', this.value+'px')"
+                />
+              </div>
+            </fieldset>
+          </li>
+        </ul>
+      </nav>
+      <button id="toggle-menu" onclick="toggleMenu()">
+        <span class="open">☰</span>
+        <span class="close">✕</span>
+      </button>
+
+      <pre id="debug" class="debug-only"></pre>
+    </div>
+
+    <script src="./alloy_finger.min.js"></script>
+    <script src="./hls.js"></script>
+    <script>
+      const video = document.getElementById('video-stream');
+      const videoSrc = './stream.m3u8';
+      const menuToggleElem = document.getElementById('toggle-menu');
+      const htmlElem = document.querySelector('html');
+      const settingsElem = document.getElementById('settings');
+      const debugElem = document.getElementById('debug');
+
+      // disable rubber band effect
+      document.addEventListener(
+        'touchmove',
+        (e) => {
+          // early exit if target parent is settingsElem
+          for (let elem = e.target; elem; elem = elem.parentElement) {
+            if (elem === settingsElem) return;
+          }
+          e.preventDefault();
+        },
+        { passive: false }
+      );
+
+      init();
+
+      async function init() {
+        const status = await getStatus();
+        if (status.stream.pid) {
+          await initStream();
+        }
+      }
+
+      function toggleMenu(state = !htmlElem.classList.contains('menu-open')) {
+        htmlElem.classList.toggle('menu-open', state);
+      }
+
+      function initStream() {
+        video.pause();
+        video.src = '';
+        if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          // Safari and native HLS support
+          video.src = videoSrc;
+        } else if (Hls.isSupported()) {
+          // Use HLS.js for Chrome and other browsers
+          var hls = new Hls();
+          hls.loadSource(videoSrc);
+          hls.attachMedia(video);
+        } else {
+          alert('Your browser does not support HLS video playback.');
+        }
+        video.play();
+      }
+
+      async function getStatus() {
+        return fetchApi('/api/status');
+      }
+
+      async function selectScene(scene) {
+        const res = await fetchApi('/api/stream', { method: 'POST', body: { scene } });
+        await initStream();
+        toggleMenu(false);
+      }
+
+      async function getStatus() {
+        return fetchApi('/api/status');
+      }
+
+      async function fetchApi(url, { method = 'GET', body = null } = {}) {
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: body ? JSON.stringify(body) : null,
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          alert(`[Error][${response.status}] ${data.error ?? JSON.stringify(data)}`);
+          return;
+        }
+        return data;
+      }
+
+      function getSettings() {
+        const settings = {};
+        for (const input of settingsElem.querySelectorAll('input')) {
+          settings[input.name] = input.value;
+        }
+        return settings;
+      }
+      function setSetting(name, value) {
+        const input = settingsElem.querySelector(`input[name="${name}"]`);
+        if (input) {
+          input.value = value;
+          input.dispatchEvent(new Event('input'));
+        }
+      }
+      function saveSettings() {
+        const settings = getSettings();
+        localStorage.setItem('settings', JSON.stringify(settings));
+      }
+      function loadSettings() {
+        const settings = JSON.parse(localStorage.getItem('settings') || '{}');
+        if (!settings) return;
+        for (const [name, value] of Object.entries(settings)) {
+          setSetting(name, value);
+        }
+      }
+      loadSettings();
+      setInterval(saveSettings, 2000);
+
+      // AlloyFinger gesture events for video
+      let rotateDiff = 0;
+      let scaleDiff = 1;
+      let moveXDiff = 0;
+      let moveYDiff = 0;
+      let delta = { x: 0, y: 0 };
+      const minRotateTrigger = 45;
+      const afVideo = new AlloyFinger(video, {
+        rotate: (e) => {
+          rotateDiff += e.angle;
+          const currRotate = parseInt(getSettings().rotate);
+          const nextRotate = currRotate + rotateDiff;
+          document.documentElement.style.setProperty('--video-rotate', nextRotate + 'deg');
+        },
+        pinch: (e) => {
+          scaleDiff = e.zoom - 1;
+          const currScale = parseFloat(getSettings().scale);
+          const nextScale = Math.max(0.5, Math.min(3, currScale + scaleDiff));
+          document.documentElement.style.setProperty('--video-scale', nextScale);
+        },
+        pressMove: (e) => {
+          const curr = getSettings();
+          const deltaWithRotationCorrecton = () => {
+            const rotate = parseInt(curr.rotate);
+            if (rotate === 90 || rotate === -270) return { x: e.deltaY, y: -e.deltaX };
+            if (rotate === 180 || rotate === -180) return { x: -e.deltaX, y: -e.deltaY };
+            if (rotate === 270 || rotate === -90) return { x: -e.deltaY, y: e.deltaX };
+            return { x: e.deltaX, y: e.deltaY };
+          };
+          delta = deltaWithRotationCorrecton();
+          moveXDiff += delta.x;
+          moveYDiff += delta.y;
+          const nextMoveX = parseInt(curr.moveX) + moveXDiff;
+          const nextMoveY = parseInt(curr.moveY) + moveYDiff;
+          document.documentElement.style.setProperty('--video-move-x', nextMoveX + 'px');
+          document.documentElement.style.setProperty('--video-move-y', nextMoveY + 'px');
+        },
+        touchEnd: () => {
+          const settings = getSettings();
+
+          // fix rotate
+          if (rotateDiff !== 0) {
+            const currRotate = parseInt(settings.rotate);
+            const nextRotate = (currRotate + rotateDiff) % 360;
+            // alert(JSON.stringify({ rotate, closestAngle, currRotate, nextRotate }));
+            setSetting('rotate', nextRotate);
+            rotateDiff = 0;
+          }
+
+          // fix scale
+          if (scaleDiff !== 1) {
+            const currScale = parseFloat(settings.scale);
+            const closestScale = currScale + scaleDiff;
+            const nextScale = Math.max(0.5, Math.min(3, closestScale));
+            setSetting('scale', nextScale);
+            scaleDiff = 1;
+          }
+
+          // fix move
+          if (moveXDiff !== 0 || moveYDiff !== 0) {
+            const currMoveX = parseInt(settings.moveX);
+            const currMoveY = parseInt(settings.moveY);
+            const nextMoveX = currMoveX + moveXDiff;
+            const nextMoveY = currMoveY + moveYDiff;
+            setSetting('moveX', nextMoveX);
+            setSetting('moveY', nextMoveY);
+            moveXDiff = 0;
+            moveYDiff = 0;
+          }
+        },
+      });
+
+      const afMenuIcon = new AlloyFinger(menuToggleElem, {
+        longTap: () => toggleDebug(),
+      });
+      function isDebug() {
+        return document.documentElement.style.getPropertyValue('--debug-display') === 'block';
+      }
+      function toggleDebug(state = !isDebug()) {
+        document.documentElement.style.setProperty('--debug-display', state ? 'block' : 'none');
+      }
+
+      function updateDebug() {
+        const settings = getSettings();
+        const info = { settings, rotateDiff, scaleDiff, moveXDiff, moveYDiff, delta };
+        debugElem.innerText = JSON.stringify(info, null, 2);
+        requestAnimationFrame(updateDebug);
+      }
+      updateDebug();
+    </script>
+  </body>
+</html>
