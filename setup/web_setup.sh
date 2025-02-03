@@ -6,10 +6,10 @@ echo "📡 Setting up Node.js Express server..."
 sudo apt update && sudo apt install -y nodejs npm
 
 # Install dependencies inside the web directory
-npm i --prefix ../web
+npm i --prefix /home/junivision/junivision/web/
 
 # Create systemd service file for Node.js server
-sudo tee /etc/systemd/system/node_web_server.service <<EOL
+sudo tee /etc/systemd/system/junivision_web.service <<EOL
 [Unit]
 Description=JuniVision Web Server
 After=network.target
@@ -17,8 +17,11 @@ After=network.target
 [Service]
 ExecStart=/usr/bin/node /home/junivision/junivision/web/server.js
 Restart=always
-User=junivision
+User=root
 WorkingDirectory=/home/junivision/junivision/web
+Environment=NODE_ENV=production
+Environment=PORT=80
+
 
 [Install]
 WantedBy=multi-user.target
@@ -26,7 +29,7 @@ EOL
 
 # Reload systemd, enable and start the Node.js web server
 sudo systemctl daemon-reload
-sudo systemctl enable node_web_server.service
-sudo systemctl start node_web_server.service
+sudo systemctl enable junivision_web.service
+sudo systemctl start junivision_web.service
 
-echo "✅ Node.js Express server is now running and will start on boot!"
+echo "✅ JuniVision web server is now running and will start on boot!"
