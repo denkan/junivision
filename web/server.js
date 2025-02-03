@@ -16,9 +16,13 @@ const deviceByType = {
 
 const streamVideoCommands = {
   // Logitech MX Brio
-  bench: `gst-launch-1.0 v4l2src device=${deviceByType.bench} ! video/x-raw, format=YUY2, width=3840, height=2160, framerate=5/1 ! videoconvert ! x264enc tune=zerolatency bitrate=2048 speed-preset=ultrafast key-int-max=15 ! h264parse ! mpegtsmux ! hlssink location=${wwwPath}/stream-%05d.ts target-duration=1 max-files=10 playlist-location=${wwwPath}/stream.m3u8 playlist-length=10`,
+  bench: `gst-launch-1.0 v4l2src device=${deviceByType.bench} ! video/x-raw, format=YUY2, width=3840, height=2160, framerate=5/1 ! videoconvert ! videoflip method=clockwise ! x264enc tune=zerolatency bitrate=2048 speed-preset=ultrafast key-int-max=15 ! h264parse ! mpegtsmux ! hlssink location=${wwwPath}/stream-%05d.ts target-duration=1 max-files=10 playlist-location=${wwwPath}/stream.m3u8 playlist-length=10`,
   // MOKOSE 4K
   board: `gst-launch-1.0 v4l2src device=${deviceByType.bench} ! video/x-raw, format=YUY2, width=3840, height=2160, framerate=5/1 ! videoconvert ! x264enc tune=zerolatency bitrate=2048 speed-preset=ultrafast key-int-max=15 ! h264parse ! mpegtsmux ! hlssink location=${wwwPath}/stream-%05d.ts target-duration=1 max-files=3 playlist-location=${wwwPath}/stream.m3u8 playlist-length=3`,
+};
+
+const session = {
+  ts: null, // epoch timestamp
 };
 
 // ------------------------------
@@ -27,6 +31,11 @@ const streamVideoCommands = {
 
 const app = express();
 app.use(express.json());
+
+app.use((_req, _res, next) => {
+  session.ts = Date.now();
+  next();
+});
 
 // Serve static files from the "web" directory
 app.use(express.static('public'));
@@ -44,6 +53,8 @@ app.post(
 app.listen(port, () => {
   console.log(`🚀 Web server running at http://localhost:${port}`);
 });
+
+stopStreamIfInactive(30);
 
 // ------------------------------
 // Actions
@@ -125,6 +136,18 @@ async function startStream(type) {
   });
 
   return streamInfo();
+}
+
+async function stopStreamIfInactive(recheckInSecs = 30) {
+  const stream = await streamInfo();
+  if (!stream?.pid) return; // no stream running
+  const elapsedSecsSinceActivity = (Date.now() - session.ts) / 1000;
+  if (elapsedSecsSinceActivity > 60) {
+    await stopStream();
+  }
+  if (recheckInSecs) {
+    setTimeout(() => stopStreamIfInactive(recheckInSecs), recheckInSecs * 1000);
+  }
 }
 
 // ------------------------------
