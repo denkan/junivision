@@ -20,7 +20,7 @@ Restart=always
 User=root
 WorkingDirectory=/home/junivision/junivision/web
 Environment=NODE_ENV=production
-Environment=PORT=80
+Environment=PORT=8080
 
 
 [Install]
